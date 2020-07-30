@@ -120,6 +120,7 @@ export default class Map extends Component {
     onBoundsChanged: PropTypes.func,
     onAnimationStart: PropTypes.func,
     onAnimationStop: PropTypes.func,
+    onTilesUpdated: PropTypes.func,
 
     // will be set to "edge" from v0.12 onward, defaulted to "center" before
     limitBounds: PropTypes.oneOf(['center', 'edge'])
@@ -177,7 +178,8 @@ export default class Map extends Component {
       pixelDelta: null,
       oldTiles: [],
       showWarning: false,
-      warningType: null
+      warningType: null,
+      tiles: undefined
     }
   }
 
@@ -271,6 +273,9 @@ export default class Map extends Component {
   }
 
   componentDidUpdate (prevProps) {
+    if (this.props.onTilesUpdated !== undefined) {
+      this.props.onTilesUpdated(this.state.tiles)
+    }
     if (this.props.mouseEvents !== prevProps.mouseEvents) {
       this.props.mouseEvents ? this.bindMouseEvents() : this.unbindMouseEvents()
     }
@@ -1092,8 +1097,11 @@ export default class Map extends Component {
     let xMax = Math.min(tileMaxX, Math.pow(2, roundedZoom) - 1)
     let yMax = Math.min(tileMaxY, Math.pow(2, roundedZoom) - 1)
 
+    this.setState({tiles: undefined})
+
     for (let x = xMin; x <= xMax; x++) {
       for (let y = yMin; y <= yMax; y++) {
+        this.setState({tiles: [...this.state.tiles, {url: mapUrl(x, y, roundedZoom)}]})
         tiles.push({
           key: `${x}-${y}-${roundedZoom}`,
           url: mapUrl(x, y, roundedZoom),
