@@ -179,7 +179,7 @@ export default class Map extends Component {
       oldTiles: [],
       showWarning: false,
       warningType: null,
-      tiles: undefined
+      tiles: []
     }
   }
 
@@ -1097,11 +1097,8 @@ export default class Map extends Component {
     let xMax = Math.min(tileMaxX, Math.pow(2, roundedZoom) - 1)
     let yMax = Math.min(tileMaxY, Math.pow(2, roundedZoom) - 1)
 
-    this.setState({tiles: undefined})
-
     for (let x = xMin; x <= xMax; x++) {
       for (let y = yMin; y <= yMax; y++) {
-        this.setState({tiles: [...this.state.tiles, {url: mapUrl(x, y, roundedZoom)}]})
         tiles.push({
           key: `${x}-${y}-${roundedZoom}`,
           url: mapUrl(x, y, roundedZoom),
@@ -1138,6 +1135,11 @@ export default class Map extends Component {
       willChange: 'transform',
       transform: `translate(${left}px, ${top}px)`
     }
+
+    this.setState({tiles: []})
+    tiles.map(tile => (
+      this.setState({tiles: [...this.state.tiles, tile.url]})
+    ))
 
     return (
       <div style={boxStyle} className={boxClassname}>
