@@ -63,11 +63,11 @@ const absoluteMinMax = [
 const hasWindow = typeof window !== 'undefined'
 
 const performanceNow = (hasWindow && window.performance && window.performance.now)
-  ? () => window.performance.now()
-  : (() => {
-    const timeStart = new Date().getTime()
-    return () => new Date().getTime() - timeStart
-  })()
+    ? () => window.performance.now()
+    : (() => {
+      const timeStart = new Date().getTime()
+      return () => new Date().getTime() - timeStart
+    })()
 
 const requestAnimationFrame = hasWindow ? window.requestAnimationFrame || window.setTimeout : callback => callback()
 const cancelAnimationFrame = hasWindow ? window.cancelAnimationFrame || window.clearTimeout : () => {}
@@ -120,7 +120,6 @@ export default class Map extends Component {
     onBoundsChanged: PropTypes.func,
     onAnimationStart: PropTypes.func,
     onAnimationStop: PropTypes.func,
-    onTilesUpdated: PropTypes.func,
 
     // will be set to "edge" from v0.12 onward, defaulted to "center" before
     limitBounds: PropTypes.oneOf(['center', 'edge'])
@@ -178,8 +177,7 @@ export default class Map extends Component {
       pixelDelta: null,
       oldTiles: [],
       showWarning: false,
-      warningType: null,
-      tiles: []
+      warningType: null
     }
   }
 
@@ -273,9 +271,6 @@ export default class Map extends Component {
   }
 
   componentDidUpdate (prevProps) {
-    if (this.props.onTilesUpdated !== undefined) {
-      this.props.onTilesUpdated(this.state.tiles)
-    }
     if (this.props.mouseEvents !== prevProps.mouseEvents) {
       this.props.mouseEvents ? this.bindMouseEvents() : this.unbindMouseEvents()
     }
@@ -297,14 +292,14 @@ export default class Map extends Component {
       return
     }
     if (
-      (
-        !this.props.center ||
         (
-          this.props.center[0] === prevProps.center[0] &&
-          this.props.center[1] === prevProps.center[1]
-        )
-      ) &&
-      this.props.zoom === prevProps.zoom
+            !this.props.center ||
+            (
+                this.props.center[0] === prevProps.center[0] &&
+                this.props.center[1] === prevProps.center[1]
+            )
+        ) &&
+        this.props.zoom === prevProps.zoom
     ) {
       // if the user is controlling either zoom or center but nothing changed
       // we don't have to update aswell
@@ -564,7 +559,7 @@ export default class Map extends Component {
           }
         }
       }
-    // added second finger and first one was in the area
+      // added second finger and first one was in the area
     } else if (event.touches.length === 2 && this._touchStartPixel) {
       event.preventDefault()
 
@@ -586,8 +581,8 @@ export default class Map extends Component {
         (t1[1] + t2[1]) / 2
       ]
       this._touchStartDistance = Math.sqrt(
-        Math.pow(t1[0] - t2[0], 2) +
-        Math.pow(t1[1] - t2[1], 2)
+          Math.pow(t1[0] - t2[0], 2) +
+          Math.pow(t1[1] - t2[1], 2)
       )
     }
   }
@@ -668,8 +663,8 @@ export default class Map extends Component {
           const newTouchPixel = getMousePixel(this._containerRef, event.changedTouches[0])
 
           if (
-            Math.abs(oldTouchPixel[0] - newTouchPixel[0]) > CLICK_TOLERANCE ||
-            Math.abs(oldTouchPixel[1] - newTouchPixel[1]) > CLICK_TOLERANCE
+              Math.abs(oldTouchPixel[0] - newTouchPixel[0]) > CLICK_TOLERANCE ||
+              Math.abs(oldTouchPixel[1] - newTouchPixel[1]) > CLICK_TOLERANCE
           ) {
             // don't throw immediately after releasing the second finger
             if (!this._secondTouchEnd || performanceNow() - this._secondTouchEnd > PINCH_RELEASE_THROW_DELAY) {
@@ -1136,27 +1131,22 @@ export default class Map extends Component {
       transform: `translate(${left}px, ${top}px)`
     }
 
-    this.setState({tiles: []})
-    tiles.map(tile => (
-      this.setState({tiles: [...this.state.tiles, tile.url]})
-    ))
-
     return (
-      <div style={boxStyle} className={boxClassname}>
-        <div style={tilesStyle}>
-          {tiles.map(tile => (
-            <img
-              key={tile.key}
-              src={tile.url}
-              srcSet={tile.srcSet}
-              width={tile.width}
-              height={tile.height}
-              loading={'lazy'}
-              onLoad={() => this.imageLoaded(tile.key)}
-              style={{ position: 'absolute', left: tile.left, top: tile.top, willChange: 'transform', transform: tile.transform, transformOrigin: 'top left', opacity: 1 }} />
-          ))}
+        <div style={boxStyle} className={boxClassname}>
+          <div style={tilesStyle}>
+            {tiles.map(tile => (
+                <img
+                    key={tile.key}
+                    src={tile.url}
+                    srcSet={tile.srcSet}
+                    width={tile.width}
+                    height={tile.height}
+                    loading={'lazy'}
+                    onLoad={() => this.imageLoaded(tile.key)}
+                    style={{ position: 'absolute', left: tile.left, top: tile.top, willChange: 'transform', transform: tile.transform, transformOrigin: 'top left', opacity: 1 }} />
+            ))}
+          </div>
         </div>
-      </div>
     )
   }
 
@@ -1172,27 +1162,27 @@ export default class Map extends Component {
     }
 
     const childrenWithProps = React.Children.map(this.props.children,
-      (child) => {
-        if (!child) {
-          return null
+        (child) => {
+          if (!child) {
+            return null
+          }
+
+          if (typeof child.type === 'string') {
+            return child
+          }
+
+          const { anchor, position, offset } = child.props
+
+          const c = this.latLngToPixel(anchor || position || center)
+
+          return React.cloneElement(child, {
+            left: c[0] - (offset ? offset[0] : 0),
+            top: c[1] - (offset ? offset[1] : 0),
+            latLngToPixel: this.latLngToPixel,
+            pixelToLatLng: this.pixelToLatLng,
+            mapState
+          })
         }
-
-        if (typeof child.type === 'string') {
-          return child
-        }
-
-        const { anchor, position, offset } = child.props
-
-        const c = this.latLngToPixel(anchor || position || center)
-
-        return React.cloneElement(child, {
-          left: c[0] - (offset ? offset[0] : 0),
-          top: c[1] - (offset ? offset[1] : 0),
-          latLngToPixel: this.latLngToPixel,
-          pixelToLatLng: this.pixelToLatLng,
-          mapState
-        })
-      }
     )
 
     const childrenStyle = {
@@ -1204,9 +1194,9 @@ export default class Map extends Component {
     }
 
     return (
-      <div style={childrenStyle}>
-        {childrenWithProps}
-      </div>
+        <div style={childrenStyle}>
+          {childrenWithProps}
+        </div>
     )
   }
 
@@ -1234,19 +1224,19 @@ export default class Map extends Component {
     }
 
     return (
-      <div key='attr' className='pigeon-attribution' style={style}>
-        {attributionPrefix === false ? null : (
-          <span>
+        <div key='attr' className='pigeon-attribution' style={style}>
+          {attributionPrefix === false ? null : (
+              <span>
             {attributionPrefix || <a href='https://pigeon-maps.js.org/' style={linkStyle}>Pigeon</a>}
-            {' | '}
+                {' | '}
           </span>
-        )}
-        {attribution || (<span>
+          )}
+          {attribution || (<span>
           {' © '}
-          <a href='https://www.openstreetmap.org/copyright' style={linkStyle}>OpenStreetMap</a>
-          {' contributors'}
+            <a href='https://www.openstreetmap.org/copyright' style={linkStyle}>OpenStreetMap</a>
+            {' contributors'}
         </span>)}
-      </div>
+        </div>
     )
   }
 
@@ -1277,15 +1267,15 @@ export default class Map extends Component {
       }
 
       const meta = typeof window !== 'undefined' &&
-          window.navigator &&
-          window.navigator.platform.toUpperCase().indexOf('MAC') >= 0 ? '⌘' : '⊞'
+      window.navigator &&
+      window.navigator.platform.toUpperCase().indexOf('MAC') >= 0 ? '⌘' : '⊞'
 
       const warningText = warningType === 'fingers' ? twoFingerDragWarning : metaWheelZoomWarning
 
       return (
-        <div style={style}>
-          {warningText.replace('META', meta)}
-        </div>
+          <div style={style}>
+            {warningText.replace('META', meta)}
+          </div>
       )
     } else {
       return null
@@ -1309,12 +1299,12 @@ export default class Map extends Component {
     const hasSize = !!(width && height)
 
     return (
-      <div style={containerStyle} ref={this.setRef}>
-        {hasSize && this.renderTiles()}
-        {hasSize && this.renderOverlays()}
-        {hasSize && this.renderAttribution()}
-        {hasSize && this.renderWarning()}
-      </div>
+        <div style={containerStyle} ref={this.setRef}>
+          {hasSize && this.renderTiles()}
+          {hasSize && this.renderOverlays()}
+          {hasSize && this.renderAttribution()}
+          {hasSize && this.renderWarning()}
+        </div>
     )
   }
 }
